@@ -33,7 +33,7 @@ final class NewsFeedViewController: UIViewController {
         super.viewDidLoad()
         configureCollectionView()
         configureDataSource()
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = GarageTheme.background
         navigationItem.title = "Новости"
         navigationItem.largeTitleDisplayMode = .always
         navigationController?.navigationBar.prefersLargeTitles = true
@@ -70,12 +70,14 @@ final class NewsFeedViewController: UIViewController {
         let layout = NewsLayout.make(metrics: layoutMetrics)
         collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         layoutMetrics.host = collectionView
-        collectionView.backgroundColor = .systemBackground
+        collectionView.backgroundColor = GarageTheme.background
+        collectionView.indicatorStyle = .white
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         collectionView.delegate = self
         collectionView.prefetchDataSource = self
         collectionView.selfSizingInvalidation = .enabledIncludingConstraints
         collectionView.refreshControl = refreshControl
+        refreshControl.tintColor = GarageTheme.brass
         refreshControl.addAction(UIAction { [weak self] _ in
             self?.viewModel.refresh()
         }, for: .valueChanged)
@@ -191,7 +193,8 @@ final class NewsFeedViewController: UIViewController {
         case .idle, .loading:
             var configuration = UIContentUnavailableConfiguration.loading()
             configuration.text = "Загрузка"
-            collectionView.backgroundView = UIContentUnavailableView(configuration: configuration)
+            configuration.textProperties.color = .secondaryLabel
+            collectionView.backgroundView = unavailableView(configuration)
         case .failed(let message):
             collectionView.backgroundView = unavailable(
                 symbol: "wifi.slash",
@@ -214,15 +217,29 @@ final class NewsFeedViewController: UIViewController {
         configuration.image = UIImage(systemName: symbol)
         configuration.text = title
         configuration.secondaryText = message
+        configuration.imageProperties.tintColor = GarageTheme.brass
+        configuration.textProperties.color = .label
+        configuration.secondaryTextProperties.color = .secondaryLabel
         if retry {
             var button = UIButton.Configuration.bordered()
             button.title = "Повторить"
+            button.baseForegroundColor = GarageTheme.brass
+            button.baseBackgroundColor = GarageTheme.brass.withAlphaComponent(0.14)
+            button.background.strokeColor = GarageTheme.brass.withAlphaComponent(0.45)
+            button.background.strokeWidth = 1
             configuration.button = button
             configuration.buttonProperties.primaryAction = UIAction { [weak self] _ in
                 self?.viewModel.refresh()
             }
         }
-        return UIContentUnavailableView(configuration: configuration)
+        return unavailableView(configuration)
+    }
+
+    private func unavailableView(_ configuration: UIContentUnavailableConfiguration) -> UIContentUnavailableView {
+        let unavailable = UIContentUnavailableView(configuration: configuration)
+        unavailable.backgroundColor = .clear
+        unavailable.tintColor = GarageTheme.brass
+        return unavailable
     }
 
     private func reloadVisibleCells() {

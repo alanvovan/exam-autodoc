@@ -10,6 +10,9 @@ final class NewsCell: UICollectionViewCell {
     private var requestedURL: URL?
     private var requestedWidth: CGFloat = 0
     private var loader: ImageLoader?
+    private let cardView = UIView()
+    private let glassView = UIVisualEffectView(effect: UIBlurEffect(style: GarageTheme.cardBlurStyle))
+    private let strokeView = UIView()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -33,8 +36,13 @@ final class NewsCell: UICollectionViewCell {
         captionLabel.text = nil
     }
 
+    override var isHighlighted: Bool {
+        didSet { updateStroke() }
+    }
+
     override func layoutSubviews() {
         super.layoutSubviews()
+        updateStroke()
         loadImageIfNeeded()
     }
 
@@ -75,15 +83,29 @@ final class NewsCell: UICollectionViewCell {
     }
 
     private func configureHierarchy() {
-        var background = UIBackgroundConfiguration.listCell()
-        background.backgroundColor = .secondarySystemGroupedBackground
-        background.cornerRadius = 12
-        backgroundConfiguration = background
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+        backgroundConfiguration = .clear()
+
+        cardView.translatesAutoresizingMaskIntoConstraints = false
+        cardView.clipsToBounds = true
+        cardView.backgroundColor = .clear
+        cardView.layer.cornerCurve = .continuous
+        cardView.layer.cornerRadius = GarageTheme.cardCornerRadius
+
+        glassView.translatesAutoresizingMaskIntoConstraints = false
+        glassView.isUserInteractionEnabled = false
+
+        strokeView.translatesAutoresizingMaskIntoConstraints = false
+        strokeView.isUserInteractionEnabled = false
+        strokeView.backgroundColor = .clear
+        strokeView.layer.cornerCurve = .continuous
+        strokeView.layer.cornerRadius = GarageTheme.cardCornerRadius
+        strokeView.layer.borderColor = GarageTheme.stroke.cgColor
 
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
-        imageView.backgroundColor = .secondarySystemFill
-        imageView.layer.cornerCurve = .continuous
+        imageView.backgroundColor = GarageTheme.imageWell
 
         titleLabel.font = .preferredFont(forTextStyle: .headline)
         titleLabel.adjustsFontForContentSizeCategory = true
@@ -92,7 +114,7 @@ final class NewsCell: UICollectionViewCell {
 
         captionLabel.font = .preferredFont(forTextStyle: .caption1)
         captionLabel.adjustsFontForContentSizeCategory = true
-        captionLabel.textColor = .secondaryLabel
+        captionLabel.textColor = GarageTheme.brass
         captionLabel.numberOfLines = 2
 
         let textStack = UIStackView(arrangedSubviews: [titleLabel, captionLabel])
@@ -104,20 +126,49 @@ final class NewsCell: UICollectionViewCell {
         let column = UIStackView(arrangedSubviews: [imageView, textStack])
         column.axis = .vertical
         column.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(column)
+
+        cardView.addSubview(glassView)
+        cardView.addSubview(column)
+        contentView.addSubview(cardView)
+        contentView.addSubview(strokeView)
 
         let aspect = imageView.heightAnchor.constraint(equalTo: imageView.widthAnchor, multiplier: 9.0 / 16.0)
         aspect.priority = .required - 1
 
         NSLayoutConstraint.activate([
-            column.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            column.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            column.topAnchor.constraint(equalTo: contentView.topAnchor),
-            column.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            cardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            cardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            cardView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            cardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+
+            glassView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
+            glassView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
+            glassView.topAnchor.constraint(equalTo: cardView.topAnchor),
+            glassView.bottomAnchor.constraint(equalTo: cardView.bottomAnchor),
+
+            column.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
+            column.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
+            column.topAnchor.constraint(equalTo: cardView.topAnchor),
+            column.bottomAnchor.constraint(equalTo: cardView.bottomAnchor),
+
+            strokeView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            strokeView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            strokeView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            strokeView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
             aspect
         ])
 
+        let selection = UIView()
+        selection.backgroundColor = .clear
+        selectedBackgroundView = selection
+
         isAccessibilityElement = true
         accessibilityTraits = .button
+    }
+
+    private func updateStroke() {
+        let scale = max(traitCollection.displayScale, 1)
+        strokeView.layer.borderWidth = 1 / scale
+        strokeView.layer.borderColor = isHighlighted ? GarageTheme.brass.cgColor : GarageTheme.stroke.cgColor
     }
 }

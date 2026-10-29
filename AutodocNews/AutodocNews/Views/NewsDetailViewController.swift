@@ -40,7 +40,7 @@ final class NewsDetailViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = GarageTheme.background
         navigationItem.largeTitleDisplayMode = .never
         navigationItem.title = viewModel.preview.title
         configureHierarchy()
@@ -62,12 +62,13 @@ final class NewsDetailViewController: UIViewController {
     private func configureHierarchy() {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.alwaysBounceVertical = true
-        scrollView.backgroundColor = .systemBackground
+        scrollView.backgroundColor = GarageTheme.background
+        scrollView.indicatorStyle = .white
         view.addSubview(scrollView)
 
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
-        imageView.backgroundColor = .secondarySystemFill
+        imageView.backgroundColor = GarageTheme.imageWell
 
         titleLabel.font = .preferredFont(forTextStyle: .title2)
         titleLabel.adjustsFontForContentSizeCategory = true
@@ -76,7 +77,7 @@ final class NewsDetailViewController: UIViewController {
 
         captionLabel.font = .preferredFont(forTextStyle: .subheadline)
         captionLabel.adjustsFontForContentSizeCategory = true
-        captionLabel.textColor = .secondaryLabel
+        captionLabel.textColor = GarageTheme.brass
         captionLabel.numberOfLines = 0
 
         descriptionLabel.font = .preferredFont(forTextStyle: .body)
@@ -90,6 +91,8 @@ final class NewsDetailViewController: UIViewController {
         webView.isOpaque = false
         webView.backgroundColor = .clear
         webView.scrollView.backgroundColor = .clear
+        webView.underPageBackgroundColor = .clear
+        webView.overrideUserInterfaceStyle = .dark
 
         statusLabel.font = .preferredFont(forTextStyle: .footnote)
         statusLabel.adjustsFontForContentSizeCategory = true
@@ -98,6 +101,7 @@ final class NewsDetailViewController: UIViewController {
         statusLabel.textAlignment = .center
         statusLabel.isHidden = true
 
+        retryButton.tintColor = GarageTheme.brass
         retryButton.setTitle("Повторить", for: .normal)
         retryButton.isHidden = true
         retryButton.addAction(UIAction { [weak self] _ in
@@ -203,12 +207,13 @@ final class NewsDetailViewController: UIViewController {
         <html>
         <head>
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="color-scheme" content="dark">
         <style>
-          :root { color-scheme: light dark; }
+          :root { color-scheme: dark; }
           html, body { margin: 0; padding: 0; background: transparent; color: CanvasText; }
           body { font: -apple-system-body; font-family: -apple-system, system-ui, sans-serif; }
           img, video { max-width: 100%; height: auto; }
-          a { color: LinkText; }
+          a { color: \(GarageTheme.brassHTML); }
         </style>
         </head>
         <body>\(html)</body>

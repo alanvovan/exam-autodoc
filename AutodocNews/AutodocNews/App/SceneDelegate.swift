@@ -10,6 +10,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     ) {
         guard let windowScene = scene as? UIWindowScene else { return }
         let window = UIWindow(windowScene: windowScene)
+        GarageTheme.apply(to: window)
         window.rootViewController = NewsSplitViewController()
         window.makeKeyAndVisible()
         self.window = window
