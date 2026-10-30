@@ -14,5 +14,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.rootViewController = NewsSplitViewController()
         window.makeKeyAndVisible()
         self.window = window
+        // Только холодный старт сцены. Выход из фона сюда не приходит.
+        MetalIntroView.presentIfNeeded(on: window)
     }
 }
