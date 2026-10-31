@@ -14,7 +14,20 @@ final class NewsDetailViewController: UIViewController {
     private let titleLabel = UILabel()
     private let captionLabel = UILabel()
     private let descriptionLabel = UILabel()
-    private let webView = WKWebView(frame: .zero)
+    private let descriptionMark = UIView()
+    private let descriptionRow = UIStackView()
+    private let webView: WKWebView = {
+        // Щипок не должен масштабировать статью: она уже внутри общей прокрутки.
+        let source = """
+        document.addEventListener('gesturestart', function (event) {
+          event.preventDefault();
+        }, { passive: false });
+        """
+        let script = WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        let configuration = WKWebViewConfiguration()
+        configuration.userContentController.addUserScript(script)
+        return WKWebView(frame: .zero, configuration: configuration)
+    }()
     private let statusLabel = UILabel()
     private let retryButton = UIButton(type: .system)
     private var webHeight: NSLayoutConstraint!
@@ -69,6 +82,13 @@ final class NewsDetailViewController: UIViewController {
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
         imageView.backgroundColor = GarageTheme.imageWell
+        if viewModel.preview.titleImageURL != nil {
+            imageView.isUserInteractionEnabled = true
+            imageView.isAccessibilityElement = true
+            imageView.accessibilityTraits = [.image, .button]
+            imageView.accessibilityLabel = "Открыть фото"
+            imageView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(openHero)))
+        }
 
         titleLabel.font = .preferredFont(forTextStyle: .title2)
         titleLabel.adjustsFontForContentSizeCategory = true
@@ -80,18 +100,37 @@ final class NewsDetailViewController: UIViewController {
         captionLabel.textColor = GarageTheme.accent
         captionLabel.numberOfLines = 0
 
-        descriptionLabel.font = .preferredFont(forTextStyle: .body)
+        // На шаг крупнее тела и плотнее по насыщенности: лид стоит прямо перед фото в тексте.
+        let lead = UIFont.systemFont(ofSize: 19, weight: .semibold)
+        descriptionLabel.font = UIFontMetrics(forTextStyle: .body).scaledFont(for: lead)
         descriptionLabel.adjustsFontForContentSizeCategory = true
         descriptionLabel.textColor = .label
         descriptionLabel.numberOfLines = 0
 
+        descriptionMark.translatesAutoresizingMaskIntoConstraints = false
+        descriptionMark.backgroundColor = GarageTheme.accent
+        descriptionMark.layer.cornerRadius = 1.5
+        descriptionMark.isAccessibilityElement = false
+        descriptionMark.widthAnchor.constraint(equalToConstant: 3).isActive = true
+
+        descriptionRow.axis = .horizontal
+        descriptionRow.alignment = .fill
+        descriptionRow.spacing = 10
+        descriptionRow.addArrangedSubview(descriptionMark)
+        descriptionRow.addArrangedSubview(descriptionLabel)
+
         webView.navigationDelegate = self
+        webView.configuration.userContentController.add(
+            WeakScriptHandler(target: self),
+            name: Self.imageTapMessage
+        )
         webView.scrollView.isScrollEnabled = false
         webView.scrollView.bounces = false
         webView.isOpaque = false
         webView.backgroundColor = .clear
         webView.scrollView.backgroundColor = .clear
         webView.underPageBackgroundColor = .clear
+        lockArticleZoom()
 
         statusLabel.font = .preferredFont(forTextStyle: .footnote)
         statusLabel.adjustsFontForContentSizeCategory = true
@@ -108,12 +147,12 @@ final class NewsDetailViewController: UIViewController {
         }, for: .touchUpInside)
 
         let textColumn = UIStackView(arrangedSubviews: [
-            titleLabel, captionLabel, descriptionLabel, webView, statusLabel, retryButton
+            titleLabel, captionLabel, descriptionRow, webView, statusLabel, retryButton
         ])
         textColumn.axis = .vertical
         textColumn.spacing = 12
         textColumn.translatesAutoresizingMaskIntoConstraints = false
-        textColumn.setCustomSpacing(20, after: descriptionLabel)
+        textColumn.setCustomSpacing(20, after: descriptionRow)
 
         imageView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.addSubview(imageView)
@@ -168,7 +207,7 @@ final class NewsDetailViewController: UIViewController {
         let item = viewModel.preview
         titleLabel.text = item.title
         captionLabel.text = NewsDateFormatting.caption(category: item.categoryType, date: item.publishedDate)
-        descriptionLabel.text = item.description
+        applyDescription(item.description)
         imageView.isHidden = false
         if item.titleImageURL == nil {
             imageView.image = GarageTheme.newsPlaceholder
@@ -191,10 +230,16 @@ final class NewsDetailViewController: UIViewController {
             if let detail {
                 titleLabel.text = detail.item.title
                 navigationItem.title = detail.item.title
-                descriptionLabel.text = detail.item.description
+                applyDescription(detail.item.description)
                 renderHTML(detail.text)
             }
         }
+    }
+
+    private func applyDescription(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        descriptionLabel.text = trimmed
+        descriptionRow.isHidden = trimmed.isEmpty
     }
 
     private func renderHTML(_ html: String) {
@@ -211,7 +256,7 @@ final class NewsDetailViewController: UIViewController {
         <!doctype html>
         <html>
         <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
         <meta name="color-scheme" content="\(scheme)">
         <style>
           :root { color-scheme: \(scheme); }
@@ -221,10 +266,43 @@ final class NewsDetailViewController: UIViewController {
           a { color: \(link); }
         </style>
         </head>
-        <body>\(html)</body>
+        <body>\(html)
+        <script>
+          document.addEventListener('click', function (event) {
+            var img = event.target.closest('img');
+            if (!img) { return; }
+            event.preventDefault();
+            window.webkit.messageHandlers.\(Self.imageTapMessage).postMessage(img.currentSrc || img.src);
+          }, true);
+        </script>
+        </body>
         </html>
         """
         webView.loadHTMLString(document, baseURL: URL(string: "https://www.autodoc.ru"))
+    }
+
+    private func lockArticleZoom() {
+        let article = webView.scrollView
+        if article.zoomScale != 1 {
+            article.setZoomScale(1, animated: false)
+        }
+        article.minimumZoomScale = 1
+        article.maximumZoomScale = 1
+        article.bouncesZoom = false
+        disableMagnification(on: article)
+    }
+
+    private func disableMagnification(on view: UIView) {
+        for recognizer in view.gestureRecognizers ?? [] {
+            if recognizer is UIPinchGestureRecognizer {
+                recognizer.isEnabled = false
+            } else if let tap = recognizer as? UITapGestureRecognizer, tap.numberOfTapsRequired == 2 {
+                tap.isEnabled = false
+            }
+        }
+        for subview in view.subviews {
+            disableMagnification(on: subview)
+        }
     }
 
     private func setWebHeight(_ height: CGFloat) {
@@ -270,15 +348,84 @@ final class NewsDetailViewController: UIViewController {
             self?.imageView.image = image ?? GarageTheme.newsPlaceholder
         }
     }
+
+    @objc private func openHero() {
+        guard let url = viewModel.preview.titleImageURL else { return }
+        let viewer = ImageViewerViewController(url: url, preview: imageView.image, imageLoader: imageLoader)
+        let options = UIViewController.Transition.ZoomOptions()
+        options.interactiveDismissShouldBegin = { [weak viewer] _ in
+            !(viewer?.isZoomedIn ?? false)
+        }
+        viewer.preferredTransition = .zoom(options: options) { [weak self] _ in
+            self?.imageView
+        }
+        present(viewer, animated: true)
+    }
+
+    fileprivate func openInlineImage(_ source: String) {
+        guard let url = URL(string: source), let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https" else {
+            return
+        }
+        present(ImageViewerViewController(url: url, preview: nil, imageLoader: imageLoader), animated: true)
+    }
+
+    fileprivate static let imageTapMessage = "imageTap"
+}
+
+/// WKUserContentController держит обработчик сильно, поэтому экран статьи нельзя отдавать ему напрямую.
+private final class WeakScriptHandler: NSObject, WKScriptMessageHandler {
+    weak var target: NewsDetailViewController?
+
+    init(target: NewsDetailViewController) {
+        self.target = target
+    }
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard let source = message.body as? String else { return }
+        target?.openInlineImage(source)
+    }
 }
 
 extension NewsDetailViewController: WKNavigationDelegate {
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
+        decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void
+    ) {
+        // Ссылка не должна подменять текст статьи внутри страницы.
+        if navigationAction.navigationType == .linkActivated {
+            openInBrowser(navigationAction.request.url)
+            decisionHandler(.cancel)
+            return
+        }
+        decisionHandler(.allow)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        createWebViewWith configuration: WKWebViewConfiguration,
+        for navigationAction: WKNavigationAction,
+        windowFeatures: WKWindowFeatures
+    ) -> WKWebView? {
+        openInBrowser(navigationAction.request.url)
+        return nil
+    }
+
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        lockArticleZoom()
         Task { @MainActor in
             // При выключенной прокрутке contentSize не растёт. Высоту берём из документа.
             let raw = try? await webView.evaluateJavaScript("document.documentElement.scrollHeight")
             let height = (raw as? NSNumber).map { CGFloat(truncating: $0) } ?? (raw as? Double).map { CGFloat($0) }
             setWebHeight(height ?? webView.scrollView.contentSize.height)
         }
+    }
+
+    private func openInBrowser(_ url: URL?) {
+        guard let url, let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
+            return
+        }
+        UIApplication.shared.open(url)
     }
 }
