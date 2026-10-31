@@ -15,8 +15,13 @@ final class NewsFeedViewController: UIViewController {
     private var dataSource: UICollectionViewDiffableDataSource<NewsSection, NewsItem>!
     private var cancellables: Set<AnyCancellable> = []
     private var appliedIDs: [Int] = []
+    private var appliedCategory: NewsCategory?
     private var lastDivision: CGRect = .null
     private let refreshControl = UIRefreshControl()
+    private let headerStack = UIStackView()
+    private let titleLabel = UILabel()
+    private let categoryControl = UISegmentedControl(items: NewsCategory.allCases.map(\.shortTitle))
+    private let selectionHaptic = UISelectionFeedbackGenerator()
 
     init(client: NewsAPIClient, imageLoader: ImageLoader) {
         self.client = client
@@ -31,22 +36,47 @@ final class NewsFeedViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        view.backgroundColor = GarageTheme.background
+        configureNavigationChrome()
+        configureHeader()
         configureCollectionView()
         configureDataSource()
-        view.backgroundColor = GarageTheme.background
-        navigationItem.title = "Новости"
-        navigationItem.largeTitleDisplayMode = .always
-        navigationController?.navigationBar.prefersLargeTitles = true
         bind()
         registerForTraitChanges([
             UITraitHorizontalSizeClass.self,
             UITraitVerticalSizeClass.self,
-            UITraitDisplayScale.self
+            UITraitDisplayScale.self,
+            UITraitPreferredContentSizeCategory.self,
+            UITraitUserInterfaceStyle.self
         ]) { (controller: Self, _) in
+            controller.applyHeaderStyle()
             controller.collectionView.collectionViewLayout.invalidateLayout()
             controller.reloadVisibleCells()
         }
+        selectionHaptic.prepare()
         viewModel.loadInitial()
+    }
+
+    /// Системный крупный заголовок всегда слева. Свой titleView бар центрирует сам; строка title остаётся для кнопки «Назад».
+    private func configureNavigationChrome() {
+        navigationItem.title = "Новости"
+        navigationItem.backButtonTitle = "Новости"
+        navigationItem.largeTitleDisplayMode = .never
+        navigationController?.navigationBar.prefersLargeTitles = false
+
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        appearance.shadowColor = .clear
+        navigationItem.standardAppearance = appearance
+        navigationItem.scrollEdgeAppearance = appearance
+        navigationItem.compactAppearance = appearance
+        navigationItem.compactScrollEdgeAppearance = appearance
+
+        titleLabel.adjustsFontForContentSizeCategory = true
+        titleLabel.numberOfLines = 1
+        titleLabel.textAlignment = .center
+        titleLabel.accessibilityTraits = .header
+        navigationItem.titleView = titleLabel
     }
 
     override func viewDidLayoutSubviews() {
@@ -66,18 +96,110 @@ final class NewsFeedViewController: UIViewController {
         })
     }
 
+    private func configureHeader() {
+        categoryControl.selectedSegmentIndex = NewsCategory.allCases.firstIndex(of: viewModel.category) ?? 0
+        categoryControl.accessibilityLabel = "Раздел новостей"
+        categoryControl.addAction(UIAction { [weak self] _ in
+            self?.categoryChanged()
+        }, for: .valueChanged)
+
+        headerStack.axis = .vertical
+        headerStack.alignment = .fill
+        headerStack.spacing = 12
+        headerStack.isLayoutMarginsRelativeArrangement = true
+        headerStack.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 4, leading: 16, bottom: 0, trailing: 16)
+        headerStack.translatesAutoresizingMaskIntoConstraints = false
+        headerStack.setContentHuggingPriority(.required, for: .vertical)
+        headerStack.addArrangedSubview(categoryControl)
+
+        view.addSubview(headerStack)
+        NSLayoutConstraint.activate([
+            headerStack.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            headerStack.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            headerStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor)
+        ])
+        applyHeaderStyle()
+    }
+
+    private func applyHeaderStyle() {
+        let compact = traitCollection.verticalSizeClass == .compact
+        let titleFont = UIFont.preferredFont(forTextStyle: compact ? .title2 : .largeTitle)
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+        titleLabel.attributedText = NSAttributedString(
+            string: "Новости",
+            attributes: [
+                .font: titleFont,
+                .kern: titleFont.pointSize * -0.02,
+                .foregroundColor: UIColor.label,
+                .paragraphStyle: paragraph
+            ]
+        )
+
+        var margins = headerStack.directionalLayoutMargins
+        margins.top = compact ? 0 : 4
+        headerStack.directionalLayoutMargins = margins
+        headerStack.spacing = compact ? 8 : 12
+        layoutNavigationTitle()
+
+        let body = UIFont.preferredFont(forTextStyle: .subheadline)
+        let controlFont = UIFontMetrics(forTextStyle: .subheadline).scaledFont(
+            for: .systemFont(ofSize: body.pointSize, weight: .semibold)
+        )
+        categoryControl.setTitleTextAttributes([
+            .foregroundColor: UIColor.label,
+            .font: controlFont
+        ], for: .normal)
+        categoryControl.setTitleTextAttributes([
+            .foregroundColor: UIColor.label,
+            .font: controlFont
+        ], for: .selected)
+        categoryControl.selectedSegmentTintColor = UIColor { traits in
+            if traits.userInterfaceStyle == .dark {
+                return UIColor(white: 1, alpha: 0.22)
+            }
+            return UIColor.white
+        }
+    }
+
+    private func layoutNavigationTitle() {
+        let size = titleLabel.intrinsicContentSize
+        guard size.width > 1, size.height > 1 else { return }
+        titleLabel.frame = CGRect(x: 0, y: 0, width: ceil(size.width) + 8, height: ceil(size.height))
+    }
+
+    private func categoryChanged() {
+        let index = categoryControl.selectedSegmentIndex
+        guard NewsCategory.allCases.indices.contains(index) else { return }
+        let category = NewsCategory.allCases[index]
+        guard category != viewModel.category else { return }
+        selectionHaptic.selectionChanged()
+        selectionHaptic.prepare()
+        viewModel.select(category)
+        scrollFeedToTop()
+    }
+
+    private func scrollFeedToTop() {
+        let top = -collectionView.adjustedContentInset.top
+        guard collectionView.contentOffset.y > top + 1 else { return }
+        collectionView.setContentOffset(
+            CGPoint(x: collectionView.contentOffset.x, y: top),
+            animated: !UIAccessibility.isReduceMotionEnabled
+        )
+    }
+
     private func configureCollectionView() {
         let layout = NewsLayout.make(metrics: layoutMetrics)
         collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         layoutMetrics.host = collectionView
         collectionView.backgroundColor = GarageTheme.background
-        collectionView.indicatorStyle = .white
+        collectionView.indicatorStyle = .default
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         collectionView.delegate = self
         collectionView.prefetchDataSource = self
         collectionView.selfSizingInvalidation = .enabledIncludingConstraints
         collectionView.refreshControl = refreshControl
-        refreshControl.tintColor = GarageTheme.brass
+        refreshControl.tintColor = GarageTheme.accent
         refreshControl.addAction(UIAction { [weak self] _ in
             self?.viewModel.refresh()
         }, for: .valueChanged)
@@ -85,7 +207,7 @@ final class NewsFeedViewController: UIViewController {
         NSLayoutConstraint.activate([
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            collectionView.topAnchor.constraint(equalTo: view.topAnchor),
+            collectionView.topAnchor.constraint(equalTo: headerStack.bottomAnchor),
             collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
@@ -137,21 +259,24 @@ final class NewsFeedViewController: UIViewController {
 
     private func apply(_ items: [NewsItem]) {
         let ids = items.map(\.id)
-        if !appliedIDs.isEmpty, ids.count > appliedIDs.count, ids.starts(with: appliedIDs) {
+        let categoryChanged = appliedCategory.map { $0 != viewModel.category } ?? false
+        let animate = !UIAccessibility.isReduceMotionEnabled && !categoryChanged
+        if !categoryChanged, !appliedIDs.isEmpty, ids.count > appliedIDs.count, ids.starts(with: appliedIDs) {
             var snapshot = dataSource.snapshot()
             let existing = Set(snapshot.itemIdentifiers.map { item in item.id })
             let fresh = items.filter { !existing.contains($0.id) }
             if !fresh.isEmpty {
                 snapshot.appendItems(fresh)
-                dataSource.apply(snapshot, animatingDifferences: true)
+                dataSource.apply(snapshot, animatingDifferences: animate)
             }
-        } else {
+        } else if ids != appliedIDs {
             var snapshot = NSDiffableDataSourceSnapshot<NewsSection, NewsItem>()
             snapshot.appendSections([.main])
             snapshot.appendItems(items)
-            dataSource.apply(snapshot, animatingDifferences: !appliedIDs.isEmpty)
+            dataSource.apply(snapshot, animatingDifferences: false)
         }
         appliedIDs = ids
+        appliedCategory = viewModel.category
         renderChrome(
             phase: viewModel.phase,
             isRefreshing: viewModel.isRefreshing,
@@ -169,7 +294,7 @@ final class NewsFeedViewController: UIViewController {
         if !isRefreshing {
             refreshControl.endRefreshing()
         }
-        layoutMetrics.showsFooter = isLoadingNextPage || pagingError != nil
+        layoutMetrics.showsFooter = !viewModel.items.isEmpty && (isLoadingNextPage || pagingError != nil)
         collectionView.collectionViewLayout.invalidateLayout()
         updateFooter(isLoading: isLoadingNextPage, message: pagingError)
         updateBackground(phase: phase)
@@ -187,6 +312,22 @@ final class NewsFeedViewController: UIViewController {
     private func updateBackground(phase: FeedPhase) {
         guard viewModel.items.isEmpty, !viewModel.isRefreshing else {
             collectionView.backgroundView = nil
+            return
+        }
+        if viewModel.isLoadingNextPage {
+            var configuration = UIContentUnavailableConfiguration.loading()
+            configuration.text = "Загрузка"
+            configuration.textProperties.color = .secondaryLabel
+            collectionView.backgroundView = unavailableView(configuration)
+            return
+        }
+        if let pagingError = viewModel.pagingError {
+            collectionView.backgroundView = unavailable(
+                symbol: "wifi.slash",
+                title: "Не удалось загрузить",
+                message: pagingError,
+                retry: true
+            )
             return
         }
         switch phase {
@@ -217,15 +358,15 @@ final class NewsFeedViewController: UIViewController {
         configuration.image = UIImage(systemName: symbol)
         configuration.text = title
         configuration.secondaryText = message
-        configuration.imageProperties.tintColor = GarageTheme.brass
+        configuration.imageProperties.tintColor = GarageTheme.accent
         configuration.textProperties.color = .label
         configuration.secondaryTextProperties.color = .secondaryLabel
         if retry {
             var button = UIButton.Configuration.bordered()
             button.title = "Повторить"
-            button.baseForegroundColor = GarageTheme.brass
-            button.baseBackgroundColor = GarageTheme.brass.withAlphaComponent(0.14)
-            button.background.strokeColor = GarageTheme.brass.withAlphaComponent(0.45)
+            button.baseForegroundColor = GarageTheme.accent
+            button.baseBackgroundColor = GarageTheme.accent.withAlphaComponent(0.14)
+            button.background.strokeColor = GarageTheme.accent.withAlphaComponent(0.45)
             button.background.strokeWidth = 1
             configuration.button = button
             configuration.buttonProperties.primaryAction = UIAction { [weak self] _ in
@@ -238,7 +379,7 @@ final class NewsFeedViewController: UIViewController {
     private func unavailableView(_ configuration: UIContentUnavailableConfiguration) -> UIContentUnavailableView {
         let unavailable = UIContentUnavailableView(configuration: configuration)
         unavailable.backgroundColor = .clear
-        unavailable.tintColor = GarageTheme.brass
+        unavailable.tintColor = GarageTheme.accent
         return unavailable
     }
 

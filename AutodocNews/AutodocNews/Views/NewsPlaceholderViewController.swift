@@ -8,12 +8,12 @@ final class NewsPlaceholderViewController: UIViewController {
         configuration.image = UIImage(systemName: "newspaper")
         configuration.text = "Новости"
         configuration.secondaryText = "Выберите новость"
-        configuration.imageProperties.tintColor = GarageTheme.brass
+        configuration.imageProperties.tintColor = GarageTheme.accent
         configuration.textProperties.color = .label
-        configuration.secondaryTextProperties.color = GarageTheme.brass
+        configuration.secondaryTextProperties.color = GarageTheme.accent
         let placeholder = UIContentUnavailableView(configuration: configuration)
         placeholder.backgroundColor = .clear
-        placeholder.tintColor = GarageTheme.brass
+        placeholder.tintColor = GarageTheme.accent
         placeholder.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(placeholder)
         NSLayoutConstraint.activate([

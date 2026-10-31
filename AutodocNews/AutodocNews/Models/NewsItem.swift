@@ -1,5 +1,23 @@
 import Foundation
 
+/// Раздел ленты. У «Авто» и «Компании» `rawValue` совпадает с `categoryType`.
+nonisolated enum NewsCategory: String, CaseIterable, Sendable {
+    case all
+    case automotive = "Автомобильные новости"
+    case company = "Новости компании"
+
+    var shortTitle: String {
+        switch self {
+        case .all:
+            "Все"
+        case .automotive:
+            "Авто"
+        case .company:
+            "Компания"
+        }
+    }
+}
+
 nonisolated struct NewsItem: Decodable, Hashable, Sendable {
     let id: Int
     let title: String

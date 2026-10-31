@@ -63,7 +63,7 @@ final class NewsDetailViewController: UIViewController {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.alwaysBounceVertical = true
         scrollView.backgroundColor = GarageTheme.background
-        scrollView.indicatorStyle = .white
+        scrollView.indicatorStyle = .default
         view.addSubview(scrollView)
 
         imageView.contentMode = .scaleAspectFill
@@ -77,7 +77,7 @@ final class NewsDetailViewController: UIViewController {
 
         captionLabel.font = .preferredFont(forTextStyle: .subheadline)
         captionLabel.adjustsFontForContentSizeCategory = true
-        captionLabel.textColor = GarageTheme.brass
+        captionLabel.textColor = GarageTheme.accent
         captionLabel.numberOfLines = 0
 
         descriptionLabel.font = .preferredFont(forTextStyle: .body)
@@ -92,7 +92,6 @@ final class NewsDetailViewController: UIViewController {
         webView.backgroundColor = .clear
         webView.scrollView.backgroundColor = .clear
         webView.underPageBackgroundColor = .clear
-        webView.overrideUserInterfaceStyle = .dark
 
         statusLabel.font = .preferredFont(forTextStyle: .footnote)
         statusLabel.adjustsFontForContentSizeCategory = true
@@ -101,7 +100,7 @@ final class NewsDetailViewController: UIViewController {
         statusLabel.textAlignment = .center
         statusLabel.isHidden = true
 
-        retryButton.tintColor = GarageTheme.brass
+        retryButton.tintColor = GarageTheme.accent
         retryButton.setTitle("Повторить", for: .normal)
         retryButton.isHidden = true
         retryButton.addAction(UIAction { [weak self] _ in
@@ -170,7 +169,10 @@ final class NewsDetailViewController: UIViewController {
         titleLabel.text = item.title
         captionLabel.text = NewsDateFormatting.caption(category: item.categoryType, date: item.publishedDate)
         descriptionLabel.text = item.description
-        imageView.isHidden = item.titleImageURL == nil
+        imageView.isHidden = false
+        if item.titleImageURL == nil {
+            imageView.image = GarageTheme.newsPlaceholder
+        }
     }
 
     private func render(phase: DetailPhase, detail: NewsDetail?) {
@@ -202,18 +204,21 @@ final class NewsDetailViewController: UIViewController {
         }
         webView.isHidden = false
         statusLabel.isHidden = true
+        let dark = traitCollection.userInterfaceStyle == .dark
+        let scheme = dark ? "dark" : "light"
+        let link = GarageTheme.accentCSS(matching: traitCollection)
         let document = """
         <!doctype html>
         <html>
         <head>
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="color-scheme" content="dark">
+        <meta name="color-scheme" content="\(scheme)">
         <style>
-          :root { color-scheme: dark; }
+          :root { color-scheme: \(scheme); }
           html, body { margin: 0; padding: 0; background: transparent; color: CanvasText; }
           body { font: -apple-system-body; font-family: -apple-system, system-ui, sans-serif; }
           img, video { max-width: 100%; height: auto; }
-          a { color: \(GarageTheme.brassHTML); }
+          a { color: \(link); }
         </style>
         </head>
         <body>\(html)</body>
@@ -262,7 +267,7 @@ final class NewsDetailViewController: UIViewController {
                 scale: scale
             )
             guard !Task.isCancelled else { return }
-            self?.imageView.image = image
+            self?.imageView.image = image ?? GarageTheme.newsPlaceholder
         }
     }
 }

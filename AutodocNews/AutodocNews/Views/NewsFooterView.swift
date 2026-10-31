@@ -8,8 +8,8 @@ final class NewsFooterView: UICollectionReusableView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         spinner.hidesWhenStopped = true
-        spinner.color = GarageTheme.brass
-        retryButton.tintColor = GarageTheme.brass
+        spinner.color = GarageTheme.accent
+        retryButton.tintColor = GarageTheme.accent
         retryButton.addAction(UIAction { [weak self] _ in self?.onRetry?() }, for: .touchUpInside)
         let stack = UIStackView(arrangedSubviews: [spinner, retryButton])
         stack.axis = .vertical

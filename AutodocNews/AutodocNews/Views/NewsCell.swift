@@ -54,7 +54,12 @@ final class NewsCell: UICollectionViewCell {
         captionLabel.text = NewsDateFormatting.caption(category: item.categoryType, date: item.publishedDate)
         accessibilityLabel = "\(item.title), \(captionLabel.text ?? "")"
         if imageURL == nil {
-            imageView.image = nil
+            imageTask?.cancel()
+            imageTask = nil
+            requestedURL = nil
+            requestedWidth = 0
+            imageView.image = GarageTheme.newsPlaceholder
+            return
         }
         loadImageIfNeeded()
     }
@@ -78,7 +83,7 @@ final class NewsCell: UICollectionViewCell {
             let image = await loader.image(for: url, pointSize: pointSize, scale: scale)
             guard !Task.isCancelled, let self, self.itemID == token else { return }
             self.imageTask = nil
-            self.imageView.image = image
+            self.imageView.image = image ?? GarageTheme.newsPlaceholder
         }
     }
 
@@ -114,7 +119,7 @@ final class NewsCell: UICollectionViewCell {
 
         captionLabel.font = .preferredFont(forTextStyle: .caption1)
         captionLabel.adjustsFontForContentSizeCategory = true
-        captionLabel.textColor = GarageTheme.brass
+        captionLabel.textColor = GarageTheme.accent
         captionLabel.numberOfLines = 2
 
         let textStack = UIStackView(arrangedSubviews: [titleLabel, captionLabel])
@@ -169,6 +174,7 @@ final class NewsCell: UICollectionViewCell {
     private func updateStroke() {
         let scale = max(traitCollection.displayScale, 1)
         strokeView.layer.borderWidth = 1 / scale
-        strokeView.layer.borderColor = isHighlighted ? GarageTheme.brass.cgColor : GarageTheme.stroke.cgColor
+        let color = isHighlighted ? GarageTheme.accent : GarageTheme.stroke
+        strokeView.layer.borderColor = color.resolvedColor(with: traitCollection).cgColor
     }
 }

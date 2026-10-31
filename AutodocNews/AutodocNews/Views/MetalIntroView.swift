@@ -105,7 +105,7 @@ final class MetalIntroView: MTKView, MTKViewDelegate {
         preferredFramesPerSecond = 60
         clearColor = MTLClearColor(red: 14.0 / 255.0, green: 18.0 / 255.0, blue: 22.0 / 255.0, alpha: 1)
         isOpaque = true
-        backgroundColor = GarageTheme.background
+        backgroundColor = GarageTheme.metal
         isUserInteractionEnabled = true
         accessibilityLabel = "Autodoc"
         accessibilityViewIsModal = true
