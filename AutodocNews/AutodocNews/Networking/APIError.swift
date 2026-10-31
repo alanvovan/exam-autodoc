@@ -1,7 +1,6 @@
 import Foundation
 
 nonisolated enum APIError: Error {
-    case invalidURL
     case transport(URLError)
     case http(Int)
     case decoding

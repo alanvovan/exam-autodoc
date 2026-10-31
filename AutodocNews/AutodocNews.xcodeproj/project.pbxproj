@@ -6,8 +6,19 @@
 	objectVersion = 110;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		0787EEC03095CE170070060F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0787EE023093AF230070060F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0787EE093093AF230070060F;
+			remoteInfo = AutodocNews;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		0787EE0A3093AF230070060F /* AutodocNews.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AutodocNews.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0787EEB93095CE160070060F /* AutodocNewsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AutodocNewsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -16,10 +27,20 @@
 			path = AutodocNews;
 			sourceTree = "<group>";
 		};
+		0787EEBA3095CE160070060F /* AutodocNewsTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = AutodocNewsTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		0787EE073093AF230070060F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		0787EEB63095CE160070060F /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
 			);
@@ -31,6 +52,7 @@
 			isa = PBXGroup;
 			children = (
 				0787EE0C3093AF230070060F /* AutodocNews */,
+				0787EEBA3095CE160070060F /* AutodocNewsTests */,
 				0787EE0B3093AF230070060F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -39,6 +61,7 @@
 			isa = PBXGroup;
 			children = (
 				0787EE0A3093AF230070060F /* AutodocNews.app */,
+				0787EEB93095CE160070060F /* AutodocNewsTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -64,6 +87,27 @@
 			productReference = 0787EE0A3093AF230070060F /* AutodocNews.app */;
 			productType = "com.apple.product-type.application";
 		};
+		0787EEB83095CE160070060F /* AutodocNewsTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0787EEBD3095CE160070060F /* Build configuration list for PBXNativeTarget "AutodocNewsTests" */;
+			buildPhases = (
+				0787EEB53095CE160070060F /* Sources */,
+				0787EEB63095CE160070060F /* Frameworks */,
+				0787EEB73095CE160070060F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0787EEC13095CE170070060F /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				0787EEBA3095CE160070060F /* AutodocNewsTests */,
+			);
+			name = AutodocNewsTests;
+			productName = AutodocNewsTests;
+			productReference = 0787EEB93095CE160070060F /* AutodocNewsTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -75,6 +119,9 @@
 				LastUpgradeCheck = 2710;
 				TargetAttributes = {
 					0787EE093093AF230070060F = {
+						CreatedOnToolsVersion = 27.1;
+					};
+					0787EEB83095CE160070060F = {
 						CreatedOnToolsVersion = 27.1;
 					};
 				};
@@ -94,12 +141,18 @@
 			projectRoot = "";
 			targets = (
 				0787EE093093AF230070060F /* AutodocNews */,
+				0787EEB83095CE160070060F /* AutodocNewsTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		0787EE083093AF230070060F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		0787EEB73095CE160070060F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
@@ -112,7 +165,20 @@
 			files = (
 			);
 		};
+		0787EEB53095CE160070060F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0787EEC13095CE170070060F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0787EE093093AF230070060F /* AutodocNews */;
+			targetProxy = 0787EEC03095CE170070060F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		0787EE133093AF240070060F /* Debug configuration for PBXProject "AutodocNews" */ = {
@@ -315,6 +381,66 @@
 			};
 			name = Release;
 		};
+		0787EEBE3095CE160070060F /* Debug configuration for PBXNativeTarget "AutodocNewsTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = T4ZW59TK7P;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ru.exam.AutodocNewsTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AutodocNews.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AutodocNews";
+			};
+			name = Debug;
+		};
+		0787EEBF3095CE160070060F /* Release configuration for PBXNativeTarget "AutodocNewsTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = T4ZW59TK7P;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ru.exam.AutodocNewsTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AutodocNews.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AutodocNews";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -331,6 +457,14 @@
 			buildConfigurations = (
 				0787EE163093AF240070060F /* Debug configuration for PBXNativeTarget "AutodocNews" */,
 				0787EE173093AF240070060F /* Release configuration for PBXNativeTarget "AutodocNews" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		0787EEBD3095CE160070060F /* Build configuration list for PBXNativeTarget "AutodocNewsTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0787EEBE3095CE160070060F /* Debug configuration for PBXNativeTarget "AutodocNewsTests" */,
+				0787EEBF3095CE160070060F /* Release configuration for PBXNativeTarget "AutodocNewsTests" */,
 			);
 			defaultConfigurationName = Release;
 		};

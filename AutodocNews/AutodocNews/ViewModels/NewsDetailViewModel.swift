@@ -15,7 +15,6 @@ final class NewsDetailViewModel {
 
     let preview: NewsItem
     private let client: NewsAPIClient
-    private var task: Task<Void, Never>?
 
     init(preview: NewsItem, client: NewsAPIClient) {
         self.preview = preview
@@ -31,7 +30,7 @@ final class NewsDetailViewModel {
         }
         phase = .loading
         let path = preview.url
-        task = Task {
+        Task {
             do {
                 let detail = try await client.detail(path: path)
                 self.detail = detail
@@ -41,9 +40,5 @@ final class NewsDetailViewModel {
                 self.phase = .failed(UserFacingError.message(for: error))
             }
         }
-    }
-
-    func cancel() {
-        task?.cancel()
     }
 }

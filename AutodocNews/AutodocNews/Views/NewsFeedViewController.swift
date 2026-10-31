@@ -18,9 +18,9 @@ final class NewsFeedViewController: UIViewController {
     private var appliedCategory: NewsCategory?
     private var lastDivision: CGRect = .null
     private let refreshControl = UIRefreshControl()
-    private let headerStack = UIStackView()
     private let titleLabel = UILabel()
     private let categoryControl = UISegmentedControl(items: NewsCategory.allCases.map(\.shortTitle))
+    private var headerTop: NSLayoutConstraint!
     private let selectionHaptic = UISelectionFeedbackGenerator()
 
     init(client: NewsAPIClient, imageLoader: ImageLoader) {
@@ -102,21 +102,15 @@ final class NewsFeedViewController: UIViewController {
         categoryControl.addAction(UIAction { [weak self] _ in
             self?.categoryChanged()
         }, for: .valueChanged)
+        categoryControl.translatesAutoresizingMaskIntoConstraints = false
+        categoryControl.setContentHuggingPriority(.required, for: .vertical)
 
-        headerStack.axis = .vertical
-        headerStack.alignment = .fill
-        headerStack.spacing = 12
-        headerStack.isLayoutMarginsRelativeArrangement = true
-        headerStack.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 4, leading: 16, bottom: 0, trailing: 16)
-        headerStack.translatesAutoresizingMaskIntoConstraints = false
-        headerStack.setContentHuggingPriority(.required, for: .vertical)
-        headerStack.addArrangedSubview(categoryControl)
-
-        view.addSubview(headerStack)
+        view.addSubview(categoryControl)
+        headerTop = categoryControl.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 4)
         NSLayoutConstraint.activate([
-            headerStack.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            headerStack.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            headerStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor)
+            categoryControl.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            categoryControl.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            headerTop
         ])
         applyHeaderStyle()
     }
@@ -136,10 +130,7 @@ final class NewsFeedViewController: UIViewController {
             ]
         )
 
-        var margins = headerStack.directionalLayoutMargins
-        margins.top = compact ? 0 : 4
-        headerStack.directionalLayoutMargins = margins
-        headerStack.spacing = compact ? 8 : 12
+        headerTop.constant = compact ? 0 : 4
         layoutNavigationTitle()
 
         let body = UIFont.preferredFont(forTextStyle: .subheadline)
@@ -207,15 +198,15 @@ final class NewsFeedViewController: UIViewController {
         NSLayoutConstraint.activate([
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            collectionView.topAnchor.constraint(equalTo: headerStack.bottomAnchor),
+            collectionView.topAnchor.constraint(equalTo: categoryControl.bottomAnchor),
             collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
 
     private func configureDataSource() {
         let cellRegistration = UICollectionView.CellRegistration<NewsCell, NewsItem> { [weak self] cell, _, item in
-            guard self != nil else { return }
-            cell.configure(item: item, loader: ImageLoader.shared)
+            guard let self else { return }
+            cell.configure(item: item, loader: self.imageLoader)
         }
         dataSource = UICollectionViewDiffableDataSource(collectionView: collectionView) { collectionView, indexPath, item in
             collectionView.dequeueConfiguredReusableCell(using: cellRegistration, for: indexPath, item: item)
@@ -315,10 +306,7 @@ final class NewsFeedViewController: UIViewController {
             return
         }
         if viewModel.isLoadingNextPage {
-            var configuration = UIContentUnavailableConfiguration.loading()
-            configuration.text = "Загрузка"
-            configuration.textProperties.color = .secondaryLabel
-            collectionView.backgroundView = unavailableView(configuration)
+            collectionView.backgroundView = loadingBackground()
             return
         }
         if let pagingError = viewModel.pagingError {
@@ -332,10 +320,7 @@ final class NewsFeedViewController: UIViewController {
         }
         switch phase {
         case .idle, .loading:
-            var configuration = UIContentUnavailableConfiguration.loading()
-            configuration.text = "Загрузка"
-            configuration.textProperties.color = .secondaryLabel
-            collectionView.backgroundView = unavailableView(configuration)
+            collectionView.backgroundView = loadingBackground()
         case .failed(let message):
             collectionView.backgroundView = unavailable(
                 symbol: "wifi.slash",
@@ -351,6 +336,13 @@ final class NewsFeedViewController: UIViewController {
                 retry: true
             )
         }
+    }
+
+    private func loadingBackground() -> UIView {
+        var configuration = UIContentUnavailableConfiguration.loading()
+        configuration.text = "Загрузка"
+        configuration.textProperties.color = .secondaryLabel
+        return unavailableView(configuration)
     }
 
     private func unavailable(symbol: String, title: String, message: String?, retry: Bool) -> UIView {
